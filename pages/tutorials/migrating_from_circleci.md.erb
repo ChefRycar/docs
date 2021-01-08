@@ -1,0 +1,148 @@
+# Migrating from CircleCI
+
+Words are great. I type them sometimes. Like now!
+
+{:toc}
+
+## Source Control Setup
+First thing is to have your code in an online source control repository which can either be GitHub, GitLab or BitBucket. Import your code in one of these repositories to migrate to Buildkite. 
+
+
+## Build Configuration 
+
+For migrating to Buildkite from CircleCI, you will need to migrate your build configuration first. In CircleCI you had to create a folder named. circleci with a file named config.yml. With Buildkite, a web interface or a file named .pipeline.yml is utilized to define build configuration. The YAML file is placed in the root directory where your source code is residing. 
+
+In the YAML steps editor, the path must be defined so that Buildkite can locate your steps. In the following code, it will look for a directory named as Buildkite with a file pipeline.yml. The steps mentioned in this YAML file will be uploaded to Buildkite.  
+
+```steps:
+  - label: "<img class="emoji" title="pipeline" alt=“: pipeline:" src="https://buildkiteassets.com/emojis/img-buildkite-64/pipeline.png" draggable="false" /> Pipeline upload"
+    command: buildkite-agent pipeline upload
+```
+
+##  Migration of a job with a single build step
+
+Let us see how to migrate a job with a single build step from CircleCI TO Buildkite.
+
+**CircleCI**
+
+```jobs:
+  jobtest:
+    steps:
+      - checkout
+      - run: "execute-script-for-jobtest"
+```
+
+**Buildkite**
+
+```steps:
+  - command: 'execute-script-for-jobtest.sh'
+```
+ 
+## Migration of a multi-stage pipeline
+
+We will be creating a pipeline where we will be having three jobs. Jobtest1 and Jobtest2 will run simultaneously while jobtest3 will run when jobs - jobtest1 and jobtest2 is completed.
+
+**CircleCI**
+
+```version: 2
+jobs:
+  jobtest1:
+    steps:
+      - checkout
+      - run: make build dependencies and artifacts
+  jobtest2:
+    steps:
+      - run: run test
+  Jobtest3:
+    steps:
+      - run: make deploy
+
+workflows:
+  version: 2
+  jobs:
+    - jobtest1
+    - jobtest2
+    - jobtest3:
+        requires:
+          - jobtest1
+          - jobtest2
+```
+
+**Buildkite**
+
+```steps:
+  - label: 'jobtest1'
+    command: 'make build parameters and artifacts’
+ 
+  - label: 'jobtest2'
+    command: 'run tests’
+ 
+  - wait
+ 
+  - label: 'job3'
+    command: ‘deploy’
+```
+
+## Migration of a job using a docker image
+
+Let us see how to migrate a job which is using a docker image from CircleCI to Buildkite. 
+ 
+**CircleCI**
+
+```jobs:
+  jobtest1:
+    docker:
+      - image: node:11
+```
+
+**Buildkite**
+
+```steps:
+  - label: 'jobtest1'
+    plugins:
+      - docker#v3.6.0:
+          image: 'node:11'
+```
+
+## Migration of a job which runs on multiple platforms
+
+**CircleCI**
+
+```jobs:
+  JobonUbuntu:
+    machine:
+      image: ubuntu-1606:202006-01
+    steps:
+      - checkout
+      - run: echo "Hi, $USER!"
+  osxJob:
+    JobOnMac:
+      xcode: 12.3.0
+    steps:
+      - checkout
+      - run: echo "Hi, $USER!"
+```
+
+**Buildkite**
+
+```steps:
+  - label: 'ubuntuJob'
+    agents:
+      ubuntu: '15.14'
+    command: 'echo "Hey, $USER!"'
+ 
+  - label: 'OsxJob'
+    agents:
+      osx: 'true'
+    command: 'echo "Hey, $USER!"'
+```
+
+For more detailed documentation, you can visit Buildkite’s official documentation and CircleCI’s official documentation. 
+
+## Migration of complex workflows
+
+The migration of complex workflows will require one to go through complete documentation on workflow creation of Buildkite and CircleCI. 
+
+## Final Thoughts 
+
+Both CircleCI and Buildkite are having both pros and cons. CircleCI is best suited for smaller teams that don’t have a dedicated person to look after CI things while Buildkite is best suited for big enterprises where they have a dedicated person to utilize its toolbox to a larger extent in building a scalable and secure CI-CD server. 
